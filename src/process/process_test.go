@@ -1,7 +1,8 @@
 package process
 
 import (
-	//"log"
+	"io"
+	"log"
 	"testing"
 	"time"
 )
@@ -19,7 +20,6 @@ func TestProcess(t *testing.T) {
 			result = result + out.Text()
 		}
 		if result != answer {
-
 			t.Errorf("Incorrect output, expected: %s, got: %s", answer, result)
 		}
 	}()
@@ -90,4 +90,41 @@ func TestDoubleInStream(t *testing.T) {
 	proc.StreamOutput()
 	proc.StreamOutput()
 	proc.Start()
+}
+
+func TestInputStream(t *testing.T) {
+	args := []string{"-c", "read name; echo $name;"}
+	proc := NewProcess("bash", args...)
+	answer := "Quinten"
+	result := ""
+
+	out := proc.StreamOutput()
+	end := make(chan error)
+
+	go func() {
+		end <- proc.Wait()
+	}()
+	go func() {
+		for out.Scan() {
+			result = result + out.Text()
+		}
+		if result != answer {
+			t.Errorf("Incorrect output, expected: %s, got: %s", answer, result)
+		}
+	}()
+	in, err := proc.OpenInputStream()
+	if err != nil {
+		t.Errorf("couldn't open the reader")
+	} else {
+		proc.Start()
+		go func() {
+			defer in.Close()
+			io.WriteString(in, "Quinten")
+		}()
+	}
+	select {
+	case retCode := <-end:
+		log.Println(retCode)
+	}
+
 }

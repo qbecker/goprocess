@@ -80,8 +80,22 @@ func (p *Process) Kill() {
 	p.mutex.Unlock()
 }
 
+func (p *Process) OpenInputStream() (io.WriteCloser, error) {
+	if p.inputStreamSet {
+		panic("Input stream already set")
+	}
+	if p.started {
+		panic("process already started")
+	}
+	stdIn, err := p.proc.StdinPipe()
+	p.inputStreamSet = true
+	return stdIn, err
+
+}
 func (p *Process) StreamOutput() *bufio.Scanner {
 	//pipe both stdout and stderr into the same pipe
+	//panics if you do streamoutput after proccess starting or
+	//if the output stream is already set
 	if p.started {
 		panic("Cant set output stream after starting")
 	}
@@ -103,6 +117,7 @@ func (p *Process) finishTimeOutOrDie() {
 	case result = <-p.done:
 	case <-p.cancellationSignal:
 		log.Println("received cancellationSignal")
+		//NOT PORTABLE TO WINDOWS
 		err := p.proc.Process.Kill()
 		if err != nil {
 			log.Println(err)
