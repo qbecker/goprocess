@@ -16,6 +16,7 @@ import (
 	"log"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 type Process struct {
@@ -29,9 +30,10 @@ type Process struct {
 	inputWriter        *io.PipeWriter
 	inputStreamSet     bool
 	outputStreamSet    bool
+	completed          bool
+	timeout            time.Duration
 	// Access to completed MUST capture the lock.
-	completed bool
-	mutex     sync.RWMutex
+	mutex sync.RWMutex
 }
 
 func NewProcess(command string, args ...string) *Process {
@@ -47,11 +49,20 @@ func NewProcess(command string, args ...string) *Process {
 		false,
 		false,
 		false,
+		0,
 		sync.RWMutex{}}
 	return process
 }
 
 func (p *Process) Start() *Process {
+	if p.timeout > 0 {
+		log.Println("Its greater than 0")
+		timer := time.NewTimer(p.timeout)
+		go func() {
+			<-timer.C
+			p.Kill()
+		}()
+	}
 	p.started = true
 	//Call the other functions to stream stdin and stdout
 	err := p.proc.Start()
@@ -61,6 +72,13 @@ func (p *Process) Start() *Process {
 	go p.awaitOutput()
 	go p.finishTimeOutOrDie()
 	return p
+}
+
+func (p *Process) SetTimeout(d time.Duration) {
+	if p.started {
+		panic("Can not set timeout after process started")
+	}
+	p.timeout = d
 }
 
 func (p *Process) Wait() error {

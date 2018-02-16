@@ -12,14 +12,15 @@ package main
 import (
 	"./process"
 	"log"
+	"time"
 )
 
 func main() {
 	//args := []string{}
-	args := []string{"-ltr"}
-	proc := process.NewProcess("ls", args...)
+	args := []string{"if=/dev/zero", "of=test", "bs=1000M", "count=1"}
+	proc := process.NewProcess("dd", args...)
 	result := make(chan error)
-
+	proc.SetTimeout(time.Second * 3)
 	go func() {
 		result <- proc.Wait()
 	}()

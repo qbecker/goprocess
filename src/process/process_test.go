@@ -12,7 +12,6 @@ func TestProcess(t *testing.T) {
 	proc := NewProcess("echo", args...)
 	answer := "Hello, World!"
 	result := ""
-
 	out := proc.StreamOutput()
 	proc.Start()
 	go func() {
@@ -29,12 +28,10 @@ func TestCancel(t *testing.T) {
 	args := []string{"while true; do foo; done"}
 	proc := NewProcess("bash", args...)
 	result := make(chan error)
-
 	go func() {
 		result <- proc.Wait()
 	}()
 	proc.Start()
-
 	time.Sleep(time.Second * 1)
 	proc.Kill()
 	select {
@@ -48,12 +45,10 @@ func TestDoubleKill(t *testing.T) {
 	args := []string{"while true; do foo; done"}
 	proc := NewProcess("bash", args...)
 	result := make(chan error)
-
 	go func() {
 		result <- proc.Wait()
 	}()
 	proc.Start()
-
 	time.Sleep(time.Second * 1)
 	proc.Kill()
 	select {
@@ -112,11 +107,13 @@ func TestInputStream(t *testing.T) {
 			t.Errorf("Incorrect output, expected: %s, got: %s", answer, result)
 		}
 	}()
+
 	in, err := proc.OpenInputStream()
+	proc.Start()
 	if err != nil {
 		t.Errorf("couldn't open the reader")
 	} else {
-		proc.Start()
+
 		go func() {
 			defer in.Close()
 			io.WriteString(in, "Quinten")
