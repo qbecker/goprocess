@@ -1,6 +1,6 @@
 package main
 
-/* Purpose: lightly wrap the os.CMD to preform long running processes that can be canceled at any time.
+/* Purpose: lightly wrap the os.CMD to perform long running processes that can be canceled at any time.
    Requirments:
        Processes must be able to be canceled at any time.
        Standard out must be captured.
